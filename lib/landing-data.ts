@@ -8,17 +8,14 @@ export interface HeroContent {
   bgImageUrl: string;
 }
 
-export interface Property {
+export interface Project {
   id: number;
   title: string;
-  description?: string;
-  price: number;
+  description: string;
   location: string;
   imageUrl: string;
-  propertyType: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  area?: number;
+  projectType: string;
+  status?: string;
 }
 
 export interface BeforeAfterData {
@@ -56,7 +53,7 @@ export async function getLandingData() {
 
     return {
       hero: heroRes.data as HeroContent | null,
-      properties: propertiesRes.data as Property[],
+      properties: propertiesRes.data as Project[],
       beforeAfter: beforeAfterRes.data as BeforeAfterData[],
       sections,
     };
