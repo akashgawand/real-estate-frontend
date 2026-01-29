@@ -5,6 +5,7 @@ import ROIEstimator from "@/components/landing/ROIEstimator";
 import TrustMarquee from "@/components/landing/TrustMarquee";
 import CTASection from "@/components/landing/CTASection";
 import PreviousWork from "@/components/landing/PreviousWork";
+import AboutSection from "@/components/landing/AboutSection";
 import { getLandingData } from "@/lib/landing-data";
 
 export default async function HomePage() {
@@ -21,6 +22,9 @@ export default async function HomePage() {
 
           case "previousWork":
             return <PreviousWork key={section.id} />;
+
+          case "about":
+            return <AboutSection key={section.id} />;
 
           case "featured":
             return properties.length > 0 ? (

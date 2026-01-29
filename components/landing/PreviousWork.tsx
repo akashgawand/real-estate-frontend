@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import api from "@/lib/api";
 
 interface CaseStudy {
@@ -16,15 +16,21 @@ interface CaseStudy {
   status: string;
 }
 
+// Custom easing for that "luxury" slow-settle feel
+const transitionSettings = {
+  duration: 0.8,
+  ease: [0.32, 0.72, 0, 1],
+};
+
 export default function PreviousWork() {
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchCaseStudies = async () => {
       try {
-        // Fetch specifically 4 items for the asymmetrical grid
-        const response = await api.get("/case-studies?limit=4");
+        const response = await api.get("/case-studies?limit=5");
         setCaseStudies(response.data.data);
       } catch (error) {
         console.error("Failed to fetch case studies:", error);
@@ -35,141 +41,215 @@ export default function PreviousWork() {
     fetchCaseStudies();
   }, []);
 
-  // CONFIG: Restored Asymmetry (7/5 split) but reduced Heights drastically
-  const getGridConfig = (index: number) => {
-    const patterns = [
-      // Row 1: Wide Left, Narrow Right
-      { span: "md:col-span-7", height: "h-[350px]" },
-      { span: "md:col-span-5", height: "h-[350px]" },
-      // Row 2: Narrow Left, Wide Right
-      { span: "md:col-span-5", height: "h-[350px]" },
-      { span: "md:col-span-7", height: "h-[350px]" },
-    ];
-    return patterns[index % patterns.length];
-  };
-
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <section className="py-24 bg-white text-black overflow-hidden relative">
+      <div className="container mx-auto px-6 max-w-[1400px]">
         {/* Header */}
-        <header className="mb-12 text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-serif font-light text-gray-900 mb-4"
-          >
-            Previous Projects
-          </motion.h2>
-          <motion.p
+        <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/10 pb-8">
+          <div className="max-w-2xl">
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="block text-xs font-medium tracking-[0.2em] uppercase text-black/40 mb-4"
+            >
+              Selected Works
+            </motion.span>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-5xl md:text-7xl font-serif font-light leading-[0.9]"
+            >
+              Architectural <br />
+              <span className="text-black/40 italic">Perspectives</span>
+            </motion.h2>
+          </div>
+          <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            className="text-gray-600 max-w-2xl mx-auto"
+            className="hidden md:block text-right"
           >
-            A selection of our recent developments and architectural
-            transformations.
-          </motion.p>
+            <p className="text-sm text-black/40 max-w-xs leading-relaxed">
+              Curated selection of spatial transformations and recent
+              developments.
+            </p>
+          </motion.div>
         </header>
 
-        {/* The Grid: 12 Columns total */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+        {/* Desktop: Premium Horizontal Rail */}
+        <div className="hidden md:flex gap-0 h-[70vh] min-h-[600px] w-full border-l border-white/10">
           {isLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
+            ? Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`${getGridConfig(i).span} ${getGridConfig(i).height} bg-gray-100 animate-pulse rounded-sm`}
+                  className="flex-1 bg-white/5 animate-pulse border-r border-white/10"
                 />
               ))
             : caseStudies.map((study, index) => {
-                const { span, height } = getGridConfig(index);
+                const isHovered = hoveredIndex === index;
+                const isSomeoneHovered = hoveredIndex !== null;
+
+                // If someone is hovered, non-hovered items shrink.
+                // If no one is hovered, everyone is equal (1).
+                const flexValue = isHovered ? 3.5 : isSomeoneHovered ? 0.5 : 1;
 
                 return (
                   <motion.div
                     key={study.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className={`${span} ${height} group relative overflow-hidden cursor-pointer bg-gray-900 rounded-sm`}
+                    className="relative overflow-hidden cursor-pointer border-r border-white/10 group"
+                    style={{ flexGrow: flexValue }} // Use style for better performance than animate prop for layout
+                    animate={{ flexGrow: flexValue }}
+                    transition={transitionSettings}
+                    onMouseEnter={() => setHoveredIndex(index)}
+                    onMouseLeave={() => setHoveredIndex(null)}
                   >
-                    {/* Image */}
-                    <div className="absolute inset-0">
-                      <img
+                    {/* Background Image with Noir Effect */}
+                    <div className="absolute inset-0 w-full h-full">
+                      <motion.div
+                        className="absolute inset-0 bg-black z-10"
+                        animate={{ opacity: isHovered ? 0 : 0.4 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                      <motion.img
                         src={study.imageUrl}
                         alt={study.title}
-                        className="w-full h-full object-cover opacity-80 transition-transform duration-1000 ease-out group-hover:scale-105 group-hover:opacity-100"
+                        className="w-full h-full object-cover"
+                        // Slight grayscale by default, color on hover. Slight zoom pan.
+                        animate={{
+                          scale: isHovered ? 1.1 : 1,
+                          filter: isHovered
+                            ? "grayscale(0%) contrast(100%)"
+                            : "grayscale(0%) contrast(120%)",
+                        }}
+                        transition={{ duration: 1.2, ease: "easeOut" }}
                       />
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     </div>
 
-                    {/* Status Badge */}
-                    {study.status === "Ongoing" && (
-                      <div className="absolute top-4 left-4 z-20">
-                        <span className="px-2 py-1 bg-white/10 backdrop-blur-md border border-white/20 text-[10px] uppercase tracking-widest text-white">
-                          {study.status}
-                        </span>
-                      </div>
-                    )}
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 z-20" />
 
-                    {/* Content - Compact Layout */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
-                      <div className="space-y-1">
-                        {/* Meta */}
-                        <div className="flex items-center gap-2 text-white/70 text-[10px] uppercase tracking-wider">
-                          <span>{study.category}</span>
-                          <span>•</span>
-                          <span>{study.year}</span>
+                    {/* Index Number (Top Left) */}
+                    <div className="absolute top-8 left-8 z-30 overflow-hidden">
+                      <motion.span
+                        className="block text-xs font-mono text-white/50"
+                        animate={{ y: isHovered ? -20 : 0 }}
+                        transition={transitionSettings}
+                      >
+                        0{index + 1}
+                      </motion.span>
+                    </div>
+
+                    {/* Vertical Text (Visible when NOT hovered) */}
+                    <motion.div
+                      className="absolute bottom-8 left-8 z-30 origin-bottom-left"
+                      animate={{
+                        opacity: isHovered ? 0 : 1,
+                        rotate: -90,
+                        x: isHovered ? -20 : 0,
+                      }}
+                      transition={transitionSettings}
+                    >
+                      <span className="text-sm font-medium tracking-[0.2em] uppercase text-white/60 whitespace-nowrap">
+                        {study.category}
+                      </span>
+                    </motion.div>
+
+                    {/* Content Overlay (Visible ONLY when hovered) */}
+                    <div className="absolute bottom-0 left-0 w-full p-8 z-30 flex flex-col justify-end h-full">
+                      <motion.div
+                        initial={false}
+                        animate={{
+                          opacity: isHovered ? 1 : 0,
+                          y: isHovered ? 0 : 40,
+                        }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className="space-y-4"
+                      >
+                        {/* Status Pill */}
+                        {study.status === "Ongoing" && (
+                          <span className="inline-block px-2 py-1 bg-white text-black text-[10px] font-bold uppercase tracking-wider mb-2">
+                            Work in Progress
+                          </span>
+                        )}
+
+                        <div className="overflow-hidden">
+                          <h3 className="text-4xl font-serif text-white mb-2 leading-tight">
+                            {study.title}
+                          </h3>
                         </div>
 
-                        {/* Title - Reduced font size for compact card */}
-                        <h3 className="text-2xl md:text-3xl font-serif text-white leading-tight">
-                          {study.title}
-                        </h3>
-
-                        {/* Location */}
-                        <div className="flex items-center gap-1 text-white/60 text-xs">
-                          <MapPin size={12} />
+                        <div className="flex items-center gap-6 text-xs font-mono text-white/60 uppercase tracking-wider border-t border-white/20 pt-4">
+                          <span>{study.year}</span>
+                          <span>—</span>
                           <span>{study.location}</span>
                         </div>
-                      </div>
 
-                      {/* Expandable Hover Content */}
-                      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-in-out">
-                        <div className="overflow-hidden">
-                          <p className="pt-3 text-white/80 text-xs leading-relaxed line-clamp-2 max-w-md">
-                            {study.description}
-                          </p>
-                          {/* <div className="pt-3 flex items-center gap-2 text-white text-xs font-semibold uppercase tracking-widest">
-                            View Project
-                            <ArrowRight
-                              size={14}
-                              className="transition-transform group-hover:translate-x-1"
-                            />
-                          </div> */}
+                        <p className="text-sm text-white/70 leading-relaxed max-w-md line-clamp-3">
+                          {study.description}
+                        </p>
+
+                        <div className="pt-4">
+                          <button className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] hover:text-white/70 transition-colors">
+                            View Case Study <ArrowUpRight size={14} />
+                          </button>
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
                   </motion.div>
                 );
               })}
         </div>
 
-        {/* Footer Button */}
-        {!isLoading && (
-          <motion.div
-            className="flex justify-center"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+        {/* Mobile: Elegant Stack (Non-interactive) */}
+        <div className="md:hidden space-y-1">
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-64 bg-white/10 animate-pulse" />
+              ))
+            : caseStudies.map((study, index) => (
+                <motion.div
+                  key={study.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="relative h-[500px] overflow-hidden group"
+                >
+                  <img
+                    src={study.imageUrl}
+                    alt={study.title}
+                    className="absolute inset-0 w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+
+                  <div className="absolute bottom-0 left-0 p-6 w-full">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2 block">
+                      0{index + 1} / {study.category}
+                    </span>
+                    <h3 className="text-3xl font-serif text-white mb-2">
+                      {study.title}
+                    </h3>
+                    <p className="text-xs text-white/60 line-clamp-2">
+                      {study.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+        </div>
+
+        {/* Footer Link */}
+        <div className="mt-16 text-center">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="group relative inline-flex items-center gap-2 px-8 py-4 bg-white/5 hover:bg-white text-white hover:text-black transition-colors duration-500"
           >
-            <button className="group relative px-10 py-4 border border-gray-900 text-gray-900 overflow-hidden transition-colors">
-              <span className="relative z-10 font-medium tracking-widest uppercase text-xs group-hover:text-white transition-colors duration-300">
-                View All Projects
-              </span>
-              <div className="absolute inset-0 bg-gray-900 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            </button>
-          </motion.div>
-        )}
+            <span className="text-xs font-medium tracking-[0.2em] uppercase">
+              Browse Full Archive
+            </span>
+            <ArrowUpRight size={14} />
+          </motion.button>
+        </div>
       </div>
     </section>
   );
